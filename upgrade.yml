@@ -1,10 +1,8 @@
 ---
 ################################################################
 # ！！ 各製品の互換性を維持できるように順番を入れ替えてください ！！ #
+# ！！ ESXiホストは台数に合わせて記載を変更してください        ！！ #
 ################################################################
-
-- name: NSXアップグレード
-  ansible.builtin.import_playbook: upgrade_nsx/nsx_upgrade.yml
 
 - name: vCenterアップグレード
   ansible.builtin.import_playbook: upgrade_vcsa/vcsa_upgrade.yml

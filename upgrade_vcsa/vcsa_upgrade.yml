@@ -5,9 +5,9 @@
   any_errors_fatal: true
   become: true
 
-  vars_files:
-    - ../../vars/common.yml
-    - ../../vars/upgrade.yml
+  # vars_files:
+  #   - ../../vars/common.yml
+  #   - ../../vars/upgrade.yml
 
   tasks:
     - name: VCSAバージョン取得(アップグレード前)
