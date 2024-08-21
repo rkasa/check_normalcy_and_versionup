@@ -1,0 +1,47 @@
+---
+- name: ESXiアップグレード
+  hosts: localhost
+  gather_facts: false
+  any_errors_fatal: true
+
+  vars_files:
+    - ../../vars/common.yml
+    - ../../vars/upgrade.yml
+
+  tasks:
+    - name: ESXiホスト情報取得
+      community.vmware.vmware_host_facts:
+        hostname: "{{ vcsa['fqdn'] }}"
+        username: "{{ vcsa['user'] }}"
+        password: "{{ vcsa['password'] }}"
+        validate_certs: false
+        esxi_hostname: "{{ esxi_fqdn }}"
+      register: gather_esxi_host_facts
+
+    - name: バージョン確認（事前）
+      ansible.builtin.debug:
+        msg:
+          - "すでにアップグレード済みです"
+          - "ターゲットバージョン:{{ bundle_name }}"
+          - "カレントバージョン:{{ gather_esxi_host_facts.ansible_facts.ansible_distribution_build }}"
+      when: gather_esxi_host_facts.ansible_facts.ansible_distribution_build not in bundle_name
+
+    - name: データストアにファイルをアップロード
+      ansible.builtin.include_tasks:
+        file: upload_file_to_datastore.yml
+      vars:
+        file_name: "{{ item }}"
+      loop: ["{{ bundle_name }}", "{{ nsx_vib_name }}"]
+
+    - name: アップグレードブロック
+      when: gather_esxi_host_facts.ansible_facts.ansible_distribution_build not in bundle_name
+      block:
+        - name: アップグレード処理
+          ansible.builtin.include_tasks:
+            file: esxi_cli_upgrade.yml
+
+        - name: メディアのバックアップ
+          ansible.builtin.include_tasks:
+            file: ../backup_media/backup_media.yml
+          vars:
+            media_file_path: "{{ esxi_zip_file_path }}"

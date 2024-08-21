@@ -1,0 +1,4 @@
+---
+- name: メディアをFTPサーバへバックアップ
+  ansible.builtin.shell:
+    cmd: "curl --silent --user {{ ftp['user'] }}:{{ ftp['password'] }} ftp://{{ ftp['server'] }} -T {{ media_file_path }}"

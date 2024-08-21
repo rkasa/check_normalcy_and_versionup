@@ -1,0 +1,67 @@
+---
+- block:
+  - name: FTPサーバ挙動確認 - linux -
+    ansible.builtin.shell: |
+      ftp -n <<EOF
+      open {{ ftp['server'] }}
+      user {{ ftp['user'] }} {{ ftp['password'] }}
+      {{ put_type }}
+      lcd {{ local_dir }}
+      cd {{ remote_dir }}
+      put {{ put_file_name }}
+      bye
+      EOF
+    register: result_ftp
+    delegate_to: "{{ ftp_client }}"
+    remote_user: root
+
+  - name: FTPサーバ挙動確認結果 - linux -
+    ansible.builtin.debug:
+      msg: "{{ result_ftp.stdout_lines }}"
+
+  - name: ファイル存在確認 - linux -
+    ansible.builtin.shell: |
+      ftp -n <<EOF
+      open {{ ftp['server'] }}
+      user {{ ftp['user'] }} {{ ftp['password'] }}
+      dir
+      bye
+      EOF
+    register: file_list
+    delegate_to: "{{ ftp_client }}"
+    remote_user: root
+
+  - name: ファイル一覧表示 - linux -
+    ansible.builtin.debug:
+      msg: "{{ file_list.stdout_lines }}"
+    failed_when: "put_file_name not in file_list.stdout"
+  
+  when: source_test_vm_os == "linux"
+
+- block:
+  - name: FTPサーバ挙動確認 - windows -
+    ansible.windows.win_shell: |
+      echo open {{ ftp['server'] }} >> ftp &echo user {{ ftp['user'] }} {{ ftp['password'] }} >> ftp &echo {{ put_type }} >> ftp &echo lcd {{ local_dir }} >> ftp &echo cd {{ remote_dir }} >> ftp &echo put {{ put_file_name }} >> ftp &echo bye >> ftp &ftp -n -v -s:ftp &del ftp
+    args:
+      executable: cmd
+    register: result_ftp
+    delegate_to: "{{ ftp_client }}"
+
+  - name: FTPサーバ挙動確認結果 - windows -
+    ansible.builtin.debug:
+      msg: "{{ result_ftp.stdout_lines }}"
+
+  - name: ファイル存在確認 - windows -
+    ansible.windows.win_shell: |
+      echo open {{ ftp['server'] }} >> ftp &echo user {{ ftp['user'] }} {{ ftp['password'] }} >> ftp &echo {{ put_type }} >> ftp &echo dir >> ftp &echo bye >> ftp &ftp -n -v -s:ftp &del ftp
+    args:
+      executable: cmd
+    register: file_list
+    delegate_to: "{{ ftp_client }}"
+
+  - name: ファイル一覧表示 - windows -
+    ansible.builtin.debug:
+      msg: "{{ file_list.stdout_lines }}"
+    failed_when: "put_file_name not in file_list.stdout"
+  
+  when: source_test_vm_os == "windows"

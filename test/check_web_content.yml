@@ -1,0 +1,27 @@
+---
+- block:
+  - name: WEBサーバコンテンツ動作確認 - linux -
+    ansible.builtin.shell: "curl -X GET {{ item.1 }}"
+    register: result_curl
+    delegate_to: "{{ target_host }}"
+    remote_user: root
+
+  - name: WEBサーバコンテンツ動作確認の結果表示 - linux -
+    ansible.builtin.debug:
+      var: result_curl.stdout_lines
+    failed_when: not result_curl.stdout | regex_search(expected_return_code)
+  
+  when: source_test_vm_os == "linux"
+
+- block:
+  - name: WEBサーバコンテンツ動作確認 - windows -
+    ansible.windows.win_shell: "(Invoke-WebRequest -Method Get -Uri {{ item.1 }}).StatusCode"
+    register: result_curl
+    delegate_to: "{{ target_host }}"
+
+  - name: WEBサーバコンテンツ動作確認の結果表示 - windows -
+    ansible.builtin.debug:
+      var: result_curl.stdout_lines
+    failed_when: not result_curl.stdout | trim | regex_search(expected_return_code)
+  
+  when: source_test_vm_os == "windows"

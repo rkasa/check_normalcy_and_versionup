@@ -1,0 +1,30 @@
+---
+- name: ファイル照会 - {{ file_name }} -
+  community.vmware.vsphere_file:
+    hostname: "{{ vcsa['fqdn'] }}"
+    username: "{{ vcsa['user'] }}"
+    password: "{{ vcsa['password'] }}"
+    datacenter: "{{ vcsa['datacenter'] }}"
+    datastore: "{{ vcsa['datastore'] }}"
+    path: "{{ vcsa['datastore_folder_path'] }}/{{ file_name }}"
+    state: file
+    validate_certs: false
+  delegate_to: localhost
+  ignore_errors: true
+  register: files
+- name: ファイル照会結果 - {{ file_name }} -
+  ansible.builtin.debug:
+    msg: "{{ files }}"
+
+- name: データストアへファイルをコピー - {{ file_name }} -
+  community.vmware.vsphere_copy:
+    hostname: "{{ vcsa['fqdn'] }}"
+    username: "{{ vcsa['user'] }}"
+    password: "{{ vcsa['password'] }}"
+    src: "{{ media_path }}/{{ file_name }}"
+    datacenter: "{{ vcsa['datacenter'] }}"
+    datastore: "{{ vcsa['datastore'] }}"
+    path: "{{ vcsa['datastore_folder_path'] }}/{{ file_name }}"
+    validate_certs: false
+  delegate_to: localhost
+  when: files.status != 200

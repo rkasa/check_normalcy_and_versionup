@@ -1,0 +1,52 @@
+---
+- name: VMテンプレートからVM作成
+  community.vmware.vmware_guest:
+    hostname: "{{ vcsa['fqdn'] }}"
+    username: "{{ vcsa['user'] }}"
+    password: "{{ vcsa['password'] }}"
+    validate_certs: false
+    name: "{{ item['vm_name'] }}"
+    template: "{{ item['template_name'] }}"
+    datacenter: "{{ vcsa['datacenter'] }}"
+    cluster: "{{ vcsa['cluster'] }}"
+    folder: "{{ vcsa['folder'] }}"
+    state: poweredon
+    networks:
+      - name: "{{ item['netowrk_name'] }}"
+        ip: "{{ item['netowrk_ip'] }}"
+        netmask: "{{ item['network_netmask'] }}"
+        gateway: "{{ item['network_gateway'] }}"
+    customization:
+      dns_servers:
+        - "{{ item['dns_server'] }}"
+      password: "{{ item['password'] }}"
+    wait_for_ip_address: true
+  register: deploy_vm
+
+- name: VM起動ホストの表示
+  ansible.builtin.debug:
+    msg: "{{ deploy_vm['instance']['hw_esxi_host'] }}"
+
+- name: VM IP設定完了確認
+  community.vmware.vmware_guest_info:
+    hostname: "{{ vcsa['fqdn'] }}"
+    username: "{{ vcsa['user'] }}"
+    password: "{{ vcsa['password'] }}"
+    datacenter: "{{ vcsa['datacenter'] }}"
+    validate_certs: false
+    name: "{{ item['vm_name'] }}"
+  retries: 60
+  delay: 30
+  until: facts.instance.hw_eth0.ipaddresses | select("eq", item['netowrk_ip'])
+  register: facts
+
+- name: 配置ホストへvMotion
+  ansible.builtin.include_tasks:
+    file: ../vm/vmotion.yml
+  vars:
+    vcsa_fqdn: "{{ vcsa['fqdn'] }}"
+    vcsa_user: "{{ vcsa['user'] }}"
+    vcsa_password: "{{ vcsa['password'] }}"
+    vm_name: "{{ item['vm_name'] }}"
+    esxi_host: "{{ item['esxi_host'] }}"
+  when: deploy_vm.instance.hw_esxi_host != item.esxi_host

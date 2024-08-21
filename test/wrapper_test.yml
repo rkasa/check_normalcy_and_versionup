@@ -1,0 +1,40 @@
+---
+- name: Ping疎通確認(内部)
+  ansible.builtin.include_tasks:
+    file: test/ping.yml
+  vars:
+    ping_source_host: "{{ ping_internal_source }}"
+    destination_ip: "{{ ping_internal_destination }}"
+
+- name: Ping疎通確認(インターネット)
+  ansible.builtin.include_tasks:
+    file: test/ping.yml
+  vars:
+    ping_source_host: "{{ ping_external_source }}"
+    destination_ip: "{{ ping_external_destination }}"
+
+- name: FTPサーバ挙動確認
+  ansible.builtin.include_tasks:
+    file: test/check_ftp.yml
+
+- name: WEBサーバコンテンツ確認
+  ansible.builtin.include_tasks:
+    file: test/check_web_content.yml
+  vars:
+    target_host: "{{ item.0.target_host }}"
+  loop: "{{ web_contens | subelements('url') }}"
+
+- name: WEBサーバコンテンツ確認(プロキシ経由)
+  ansible.builtin.include_tasks:
+    file: test/check_web_content_proxy.yml
+  vars:
+    target_host: "{{ item.0.target_host }}"
+  loop: "{{ web_contens | subelements('url') }}"
+  when: proxy_server != None
+
+- name: DNS名前解決確認
+  ansible.builtin.include_tasks:
+    file: test/check_dns.yml
+  vars:
+    ip: "{{ item.0.target_host }}"
+  loop: "{{ dns_list | subelements('dns') }}"

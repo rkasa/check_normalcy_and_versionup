@@ -1,0 +1,9 @@
+---
+- name: vMotion実行
+  community.vmware.vmware_vmotion:
+    hostname: "{{ vcsa['fqdn'] }}"
+    username: "{{ vcsa['user'] }}"
+    password: "{{ vcsa['password'] }}"
+    vm_name: "{{ vm_name }}"
+    destination_host: "{{ esxi_host }}"
+    validate_certs: false

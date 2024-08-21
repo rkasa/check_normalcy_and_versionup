@@ -1,0 +1,67 @@
+---
+- name: VCSA CLIアップグレードで使用するJSONファイルの情報取得
+  ansible.builtin.stat:
+    path: "{{ json_file_path }}"
+  register: chk_file
+
+- name: JSONファイル存在判定
+  ansible.builtin.debug:
+    msg: file [{{ chk_file.stat.path }}] is exits
+  when: chk_file.stat.isreg
+
+- name: マウントポイント作成
+  ansible.builtin.file:
+    path: "{{ mount_point }}"
+    state: directory
+    owner: "root"
+    group: "root"
+    mode: "0555"
+
+- name: ISOマウント
+  ansible.posix.mount:
+    path: "{{ mount_point }}"
+    src: "{{ vcsa_iso_file_path }}"
+    fstype: iso9660
+    opts: ro,noauto
+    state: mounted
+
+- name: CLIアップグレード用JSONファイルの検証
+  ansible.builtin.shell:
+    cmd: "bash vcsa-deploy upgrade --verify-template-only {{ json_file_path }}"
+    chdir: "{{ mount_point }}/vcsa-cli-installer/lin64"
+  register: result1
+  failed_when: "'[FAILED]' in result1.stdout"
+- name: 検証結果表示
+  ansible.builtin.debug:
+    var: result1.stdout_lines
+
+- name: CLIアップグレードプリチェック
+  ansible.builtin.expect:
+    command: "bash vcsa-deploy upgrade --precheck-only --accept-eula {{ json_file_path }}"
+    chdir: "{{ mount_point }}/vcsa-cli-installer/lin64"
+    responses:
+      "Enter '1' or '2'": 1
+    timeout: 300
+  register: result2
+  failed_when: "'[FAILED]' in result2.stdout"
+- name: プリチェック結果表示
+  ansible.builtin.debug:
+    var: result2.stdout_lines
+
+- name: CLIアップグレード
+  ansible.builtin.expect:
+    command: "bash vcsa-deploy upgrade --accept-eula {{ json_file_path }}"
+    chdir: "{{ mount_point }}/vcsa-cli-installer/lin64"
+    responses:
+      "Enter '1' or '2'": 1
+    timeout: 10800
+  register: result3
+  failed_when: "'[FAILED]' in result3.stdout"
+- name: CLIアップグレード結果表示
+  ansible.builtin.debug:
+    var: result3.stdout_lines
+
+- name: ISOアンマウント
+  ansible.posix.mount:
+    path: "{{ mount_point }}"
+    state: unmounted

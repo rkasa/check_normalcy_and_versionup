@@ -1,0 +1,147 @@
+---
+- name: ESXiサービス取得
+  community.vmware.vmware_host_service_info:
+    hostname: "{{ vcsa['fqdn'] }}"
+    username: "{{ vcsa['user'] }}"
+    password: "{{ vcsa['password'] }}"
+    esxi_hostname: "{{ esxi_fqdn }}"
+    validate_certs: false
+  delegate_to: localhost
+  register: host_services
+- name: SSHサービスのステータス表示
+  ansible.builtin.debug:
+    msg: "{{ host_services.host_service_info[esxi_fqdn]|selectattr('key','==','TSM-SSH')|list|map(attribute='running')|list|first }}"
+
+- name: アップグレード前情報設定
+  set_fact:
+    before_version: "{{ gather_esxi_host_facts.ansible_facts.ansible_distribution_version }}"
+    bfore_build_number: "{{ gather_esxi_host_facts.ansible_facts.ansible_distribution_build }}"
+    ssh_status: "{{ host_services.host_service_info[esxi_fqdn]|selectattr('key','==','TSM-SSH')|list|map(attribute='running')|list|first }}"
+
+- name: メンテナンスモードへ切り替え
+  vmware_maintenancemode:
+    hostname: "{{ vcsa['fqdn'] }}"
+    username: "{{ vcsa['user'] }}"
+    password: "{{ vcsa['password'] }}"
+    validate_certs: false
+    esxi_hostname: "{{ esxi_fqdn }}"
+    timeout: 3600
+    state: present
+
+- name: ESXiのSSH有効化
+  vmware_host_service_manager:
+    hostname: "{{ vcsa['fqdn'] }}"
+    username: "{{ vcsa['user'] }}"
+    password: "{{ vcsa['password'] }}"
+    validate_certs: false
+    esxi_hostname: "{{ esxi_fqdn }}"
+    service_name: TSM-SSH
+    state: present
+  when: ssh_status == false
+
+- name: hostsにSSH接続情報を追加
+  add_host: 
+    hostname: "{{ esxi_fqdn }}"
+    ansible_user: "{{ esxi_user }}"
+    ansible_password: "{{ esxi_password }}"
+
+- name: オフラインバンドルファイルの存在確認
+  ansible.builtin.stat:
+    path: "/vmfs/volumes/{{ vcsa['datastore'] }}/{{ vcsa['datastore_folder_path'] }}/{{ bundle_name }}"
+  register: chk_file
+  delegate_to: "{{ esxi_fqdn }}"
+
+- name: オフラインバンドルファイル存在判定
+  ansible.builtin.debug:
+    msg: file [{{ chk_file.stat.path }}] is exits
+  when: chk_file.stat.isreg
+
+- name: オフラインバンドルのプロファイルを確認
+  command: "esxcli software sources profile list --depot=/vmfs/volumes/{{ vcsa['datastore'] }}/{{ vcsa['datastore_folder_path'] }}/{{ bundle_name }}"
+  register: check_profiles
+  delegate_to: "{{ esxi_fqdn }}"
+- name: オフラインバンドルのプロファイル一覧表示
+  ansible.builtin.debug:
+    msg: "{{ check_profiles.stdout_lines }}"
+
+- name: ESXiアップグレードドライラン
+  command: "esxcli software profile update --depot=/vmfs/volumes/{{ vcsa['datastore'] }}/{{ vcsa['datastore_folder_path'] }}/{{ bundle_name }} --profile={{ profile_name }} --dry-run --no-hardware-warning"
+  register: result_dry_run
+  delegate_to: "{{ esxi_fqdn }}"
+- name: ESXiアップグレードドライラン結果表示
+  ansible.builtin.debug:
+    msg: "{{ result_dry_run.stdout_lines }}"
+
+- name: ESXiアップグレード
+  command: "esxcli software profile update --depot=/vmfs/volumes/{{ vcsa['datastore'] }}/{{ vcsa['datastore_folder_path'] }}/{{ bundle_name }} --profile={{ profile_name }} --no-hardware-warning"
+  register: result_upgrade
+  delegate_to: "{{ esxi_fqdn }}"
+- name: ESXiアップグレード結果の表示
+  ansible.builtin.debug:
+    msg: "{{ result_upgrade.stdout_lines }}"
+
+- name: ESXi再起動
+  vmware_host_powerstate:
+    hostname: "{{ vcsa['fqdn'] }}"
+    username: "{{ vcsa['user'] }}"
+    password: "{{ vcsa['password'] }}"
+    validate_certs: false
+    esxi_hostname: "{{ esxi_fqdn }}"
+    state: reboot-host
+
+- name: アップグレード後のバージョン確認
+  vmware_host_facts:
+    hostname: "{{ vcsa['fqdn'] }}"
+    username: "{{ vcsa['user'] }}"
+    password: "{{ vcsa['password'] }}"
+    validate_certs: false
+    esxi_hostname: "{{ esxi_fqdn }}"
+  retries: 60
+  delay: 30
+  until: 
+    - "'ansible_facts' in check_build_number_result"
+    - check_build_number_result.ansible_facts.ansible_distribution_version != before_version
+  register: check_build_number_result
+
+- name: NSX VIBアップデートのドライラン
+  command: "esxcli software vib install -d /vmfs/volumes/{{ vcsa['datastore'] }}/{{ vcsa['datastore_folder_path'] }}/{{ nsx_vib_name }} --dry-run"
+  register: result_vib_dry_run
+  delegate_to: "{{ esxi_fqdn }}"
+- name: NSX VIBアップデートのドライランの結果表示
+  ansible.builtin.debug:
+    msg: "{{ result_vib_dry_run.stdout_lines }}"
+
+- name: NSX VIBアップデート
+  command: "esxcli software vib install -d /vmfs/volumes/{{ vcsa['datastore'] }}/{{ vcsa['datastore_folder_path'] }}/{{ nsx_vib_name }}"
+  register: result_vib
+  delegate_to: "{{ esxi_fqdn }}"
+- name: NSX VIBアップデート結果の表示
+  ansible.builtin.debug:
+    msg: "{{ result_vib.stdout_lines }}"
+
+- name: ESXiのSSH無効化
+  vmware_host_service_manager:
+    hostname: "{{ vcsa['fqdn'] }}"
+    username: "{{ vcsa['user'] }}"
+    password: "{{ vcsa['password'] }}"
+    validate_certs: false
+    esxi_hostname: "{{ esxi_fqdn }}"
+    service_name: TSM-SSH
+    state: absent
+  when: ssh_status == false
+
+- name: メンテナスモード解除
+  vmware_maintenancemode:
+    hostname: "{{ vcsa['fqdn'] }}"
+    username: "{{ vcsa['user'] }}"
+    password: "{{ vcsa['password'] }}"
+    validate_certs: false
+    esxi_hostname: "{{ esxi_fqdn }}"
+    timeout: 3600
+    state: absent
+
+- debug:
+    msg:
+      - "hostname{% raw %}:{% endraw %} {{ esxi_fqdn }}"
+      - "before{% raw %}:{% endraw %} {{ before_version }}"
+      - "after{% raw %}:{% endraw %} {{ check_build_number_result.ansible_facts.ansible_distribution_version }}"

@@ -1,0 +1,41 @@
+---
+- block:
+  - name: WEBサーバコンテンツ動作確認(プロキシ経由) - linux -
+    ansible.builtin.shell: "curl -U {{ proxy_user }}:{{ proxy_password }} --proxy {{ proxy_server }}:{{ proxy_port }} -L {{ item.1 }}"
+    register: result_curl
+    delegate_to: "{{ target_host }}"
+    remote_user: root
+
+  - name: WEBサーバコンテンツ動作確認の結果表示(プロキシ経由) - linux -
+    ansible.builtin.debug:
+      var: result_curl.stdout_lines
+    failed_when: not result_curl.stdout | regex_search(expected_return_code)
+    
+  when: source_test_vm_os == "linux"
+
+- block:
+  - name: WEBサーバコンテンツ動作確認(プロキシ経由) - windows -
+    ansible.windows.win_shell: |
+      $user = "{{ proxy_user }}"
+      $password = "{{ proxy_password }}"
+      $proxyhost = "{{ proxy_server }}:{{ proxy_port }}"
+      $proxyaddress = "http://$($proxyhost)/"
+      $proxyaddress_with_authenticattion = "http://$($user):$($password)@$($proxyhost)"
+      $env:http_proxy = $proxyaddress_with_authenticattion
+      $env:https_proxy = $proxyaddress_with_authenticattion
+      $env:ftp_proxy = $proxyaddress_with_authenticattion
+      $password_secure = ConvertTo-SecureString $password -AsPlainText -Force
+      $creds = New-Object System.Management.Automation.PSCredential $user, $password_secure
+      $proxy = New-Object System.Net.WebProxy $proxyaddress
+      $proxy.Credentials = $creds
+      [System.Net.WebRequest]::DefaultWebProxy = $proxy
+      (Invoke-WebRequest -Method Get -Uri {{ item.1 }}).StatusCode
+    register: result_curl
+    delegate_to: "{{ target_host }}"
+
+  - name: WEBサーバコンテンツ動作確認の結果表示(プロキシ経由) - windows -
+    ansible.builtin.debug:
+      var: result_curl.stdout_lines
+    failed_when: not result_curl.stdout | trim | regex_search(expected_return_code)
+  
+  when: source_test_vm_os == "windows"

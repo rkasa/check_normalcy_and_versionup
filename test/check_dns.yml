@@ -1,0 +1,28 @@
+---
+- block:
+  - name: 名前解決確認 - linux - ({{ item.1 }})
+    ansible.builtin.shell: nslookup "{{ item.1 }}"
+    register: result_nslookup
+    delegate_to: "{{ ip }}"
+    remote_user: root
+
+  - name: 名前解決確認の結果表示
+    ansible.builtin.debug:
+      msg: "{{ result_nslookup.stdout_lines }}"
+    failed_when: item.1 not in result_nslookup.stdout
+
+  when: source_test_vm_os == "linux"
+
+- block:
+  - name: 名前解決確認 - windows - ({{ item.1 }})
+    ansible.windows.win_shell: nslookup "{{ item.1 }}"
+    register: result_nslookup
+    delegate_to: "{{ ip }}"
+    remote_user: root
+
+  - name: 名前解決確認の結果表示
+    ansible.builtin.debug:
+      msg: "{{ result_nslookup.stdout_lines }}"
+    failed_when: item.1 not in result_nslookup.stdout
+    
+  when: source_test_vm_os == "windows"

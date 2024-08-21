@@ -1,0 +1,30 @@
+---
+- name: クラスタ設定情報の収集
+  community.vmware.vmware_cluster_info:
+    hostname: "{{ vcsa['fqdn'] }}"
+    username: "{{ vcsa['user'] }}"
+    password: "{{ vcsa['password'] }}"
+    cluster_name: "{{ vcsa['cluster'] }}"
+    validate_certs: false
+  register: cluster_info
+
+- name: DRSの自動化レベルの表示
+  ansible.builtin.debug:
+    msg: "{{ cluster_info['clusters'][vcsa['cluster']]['drs_default_vm_behavior'] }}"
+
+- name: 設定情報の保存
+  ansible.builtin.set_fact:
+    before_drs_level: "{{ cluster_info['clusters'][vcsa['cluster']]['drs_default_vm_behavior'] }}"
+  when: restore == false
+
+- name: DRSの自動化レベルの表示
+  community.vmware.vmware_cluster_drs:
+    hostname: "{{ vcsa['fqdn'] }}"
+    username: "{{ vcsa['user'] }}"
+    password: "{{ vcsa['password'] }}"
+    datacenter_name: "{{ vcsa['datacenter'] }}"
+    cluster_name: "{{ vcsa['cluster'] }}"
+    validate_certs: false
+    enable: true
+    drs_default_vm_behavior: "{{ drs_level }}"
+  when: cluster_info['clusters'][vcsa['cluster']]['drs_default_vm_behavior'] != drs_level

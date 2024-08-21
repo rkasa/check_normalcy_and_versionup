@@ -1,0 +1,26 @@
+---
+- block:
+  - name: Ping疎通確認 - linux -
+    ansible.builtin.shell: "ping {{ destination_ip }} -c 3"
+    register: result_ping
+    delegate_to: "{{ ping_source_host }}"
+    remote_user: root
+
+  - name: Ping疎通確認結果表示
+    ansible.builtin.debug:
+      msg: "{{ result_ping.stdout_lines }}"
+
+  when: source_test_vm_os == "linux"
+
+- block:
+  - name: Ping疎通確認 - windows -
+    ansible.windows.win_shell: "ping {{ destination_ip }} -n 3"
+    register: result_ping
+    delegate_to: "{{ ping_source_host }}"
+    remote_user: administrator
+
+  - name: Ping疎通確認結果表示
+    ansible.builtin.debug:
+      msg: "{{ result_ping.stdout_lines }}"
+  
+  when: source_test_vm_os == "windows"

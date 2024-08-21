@@ -1,0 +1,57 @@
+---
+- name: 正常性確認
+  hosts: localhost
+  gather_facts: false
+  any_errors_fatal: true
+
+#  vars_files:
+#    - ../vars/common.yml
+#    - ../vars/normalcy_check.yml
+
+  tasks:
+    - name: DRS自動化レベル変更
+      ansible.builtin.include_tasks:
+        file: cluster/set_drs_level.yml
+      vars:
+        drs_level: manual
+        restore: false
+
+    - name: テスト用VM作成
+      ansible.builtin.include_tasks:
+        file: vm/create_vm_template.yml
+      with_items: "{{ vm_info }}"
+
+    - name: テスト実施 - バージョンアップ前後ホストに配置パターン -
+      ansible.builtin.include_tasks:
+        file: test/wrapper_test.yml
+
+    - name: vMotion - バージョンアップ前ホストのVMをバージョンアップ後ホストへ移行 -
+      ansible.builtin.include_tasks:
+        file: vm/vmotion.yml
+      vars:
+        vm_name: "{{ vm_info[0].vm_name }}"
+        esxi_host: "{{ vmotion_dest_host }}"
+
+    - name: テスト実施 - バージョンアップ後ホストのみに配置パターン -
+      ansible.builtin.include_tasks:
+        file: test/wrapper_test.yml
+
+    - name: 管理VMの起動プロセス確認
+      ansible.builtin.include_tasks:
+        file: test/check_process.yml
+      vars:
+        ip: "{{ item.0.target_host }}"
+        target_vm_os: "{{ item.0.target_vm_os }}"
+      loop: "{{ managed_vm_process_list | subelements('process') }}"
+
+    - name: テスト用VM削除
+      ansible.builtin.include_tasks:
+        file: vm/remove_vm.yml
+      with_items: "{{ vm_info }}"
+
+    - name: DRS自動化レベルの設定戻し
+      ansible.builtin.include_tasks:
+        file: cluster/set_drs_level.yml
+      vars:
+        drs_level: "{{ before_drs_level }}"
+        restore: true

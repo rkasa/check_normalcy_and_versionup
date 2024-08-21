@@ -1,0 +1,40 @@
+---
+- name: VM情報収集
+  community.vmware.vmware_guest_info:
+    hostname: "{{ vcsa['fqdn'] }}"
+    username: "{{ vcsa['user'] }}"
+    password: "{{ vcsa['password'] }}"
+    datacenter: "{{ vcsa['datacenter'] }}"
+    validate_certs: false
+    name: "{{ item.vm_name }}"
+  register: facts
+- ansible.builtin.debug:
+    var: facts.instance.hw_power_status
+
+- name: VMパワーオフ
+  community.vmware.vmware_guest_powerstate:
+    hostname: "{{ vcsa['fqdn'] }}"
+    username: "{{ vcsa['user'] }}"
+    password: "{{ vcsa['password'] }}"
+    folder: "{{ vcsa['folder'] }}"
+    validate_certs: false
+    name: "{{ item.vm_name }}"
+    state: powered-off
+  register: deploy
+  when: facts.instance.hw_power_status == "poweredOn"
+- ansible.builtin.debug:
+    var: deploy.instance.hw_power_status
+  when: facts.instance.hw_power_status == "poweredOn"
+
+- name: VM削除 - "{{ item.vm_name }}" -
+  vmware_guest:
+    hostname: "{{ vcsa['fqdn'] }}"
+    username: "{{ vcsa['user'] }}"
+    password: "{{ vcsa['password'] }}"
+    validate_certs: false
+    datacenter: "{{ vcsa['datacenter'] }}"
+    cluster: "{{ vcsa['cluster'] }}"
+    name: "{{ item.vm_name }}"
+    state: absent
+  delegate_to: localhost
+  register: facts

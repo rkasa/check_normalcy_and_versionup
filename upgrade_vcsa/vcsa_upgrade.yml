@@ -1,0 +1,35 @@
+---
+- name: VCSAアップグレード
+  hosts: localhost
+  gather_facts: false
+  any_errors_fatal: true
+  become: true
+
+  vars_files:
+    - ../../vars/common.yml
+    - ../../vars/upgrade.yml
+
+  tasks:
+    - name: VCSAバージョン取得(アップグレード前)
+      community.vmware.vmware_about_info:
+        hostname: "{{ vcsa['fqdn'] }}"
+        username: "{{ vcsa['user'] }}"
+        password: "{{ vcsa['password'] }}"
+        validate_certs: false
+      register: vcenter_about_info
+    - name: VCSAバージョン(アップグレード前)
+      ansible.builtin.debug:
+        msg: "{{ vcenter_about_info.about_info.version }}"
+
+    - name: VCSAアップグレード
+      when: vcenter_about_info.about_info.version != vcsa_iso_file_path.split('-')[3]
+      block:
+        - name: "アップグレード"
+          ansible.builtin.include_tasks:
+            file: vcsa_cli_upgrade.yml
+
+        - name: "メディアのバックアップ"
+          ansible.builtin.include_tasks:
+            file: ../backup_media/backup_media.yml
+          vars:
+            media_file_path: "{{ vcsa_iso_file_path }}"

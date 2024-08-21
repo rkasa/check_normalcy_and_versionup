@@ -1,0 +1,25 @@
+---
+- block:
+  - name: プロセス起動状況確認 - linux -
+    ansible.builtin.shell: ps -ef | grep "{{ item.1 }}" | grep -v grep
+    register: result_ps
+    delegate_to: "{{ ip }}"
+    remote_user: root
+
+  - name: プロセス起動状況確認の結果表示 - linux -
+    ansible.builtin.debug:
+      msg: "{{ result_ps.stdout_lines }}"
+  
+  when: target_vm_os == "linux"
+
+- block:
+  - name: プロセス起動状況確認 - windows -
+    ansible.windows.win_shell: tasklist | findstr "{{ item.1 }}"
+    register: result_ps
+    delegate_to: "{{ ip }}"
+
+  - name: プロセス起動状況確認の結果表示 - windows -
+    ansible.builtin.debug:
+      msg: "{{ result_ps.stdout_lines }}"
+  
+  when: target_vm_os == "windows"

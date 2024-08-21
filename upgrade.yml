@@ -1,0 +1,37 @@
+---
+################################################################
+# ！！ 各製品の互換性を維持できるように順番を入れ替えてください ！！ #
+################################################################
+
+- name: NSXアップグレード
+  ansible.builtin.import_playbook: upgrade_nsx/nsx_upgrade.yml
+
+- name: vCenterアップグレード
+  ansible.builtin.import_playbook: upgrade_vcsa/vcsa_upgrade.yml
+
+- name: ESXiアップグレード1
+  ansible.builtin.import_playbook: upgrade_esxi/esxi_upgrade.yml
+  vars:
+    esxi_fqdn: "{{ esxi[0]['fqdn'] }}"
+    esxi_user: "{{ esxi[0]['user'] }}"
+    esxi_password: "{{ esxi[0]['password'] }}"
+
+- name: 正常性確認 - アップグレード中 -
+  ansible.builtin.import_playbook: normalcy_check.yml
+
+- name: ESXiアップグレード2
+  ansible.builtin.import_playbook: upgrade_esxi/esxi_upgrade.yml
+  vars:
+    esxi_fqdn: "{{ esxi[1]['fqdn'] }}"
+    esxi_user: "{{ esxi[1]['user'] }}"
+    esxi_password: "{{ esxi[1]['password'] }}"
+
+- name: ESXiアップグレード3
+  ansible.builtin.import_playbook: upgrade_esxi/esxi_upgrade.yml
+  vars:
+    esxi_fqdn: "{{ esxi[2]['fqdn'] }}"
+    esxi_user: "{{ esxi[2]['user'] }}"
+    esxi_password: "{{ esxi[2]['password'] }}"
+
+- name: 正常性確認 - アップグレード後 -
+  ansible.builtin.import_playbook: normalcy_check.yml
