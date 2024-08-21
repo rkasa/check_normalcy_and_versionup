@@ -10,7 +10,7 @@
 
   tasks:
     - name: アップグレード前のNSXのバージョン確認
-      damhau.ansible_for_nsxt.nsxt_rest:
+      vmware.ansible_for_nsxt.nsxt_rest:
         hostname: "{{ nsx['fqdn'] }}"
         username: "{{ nsx['user'] }}"
         password: "{{ nsx['password'] }}"
