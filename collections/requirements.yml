@@ -1,5 +1,5 @@
 ---
 collections:
-  - name: vmware.ansible_for_nsxt
+  - name: damhau.ansible_for_nsxt
   - name: community.vmware
   - name: ansible.posix
