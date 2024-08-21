@@ -1,6 +1,6 @@
 ---
 - name: アップグレード状況の取得（事前）
-  vmware.ansible_for_nsxt.nsxt_upgrade_status_summary_facts:
+  damhau.ansible_for_nsxt.nsxt_upgrade_status_summary_facts:
     hostname: "{{ nsx['fqdn'] }}"
     username: "{{ nsx['user'] }}"
     password: "{{ nsx['password'] }}"
@@ -11,7 +11,7 @@
     msg: "{{ upgrade_status }}"
     
 - name: Edgeグループ設定取得
-  vmware.ansible_for_nsxt.nsxt_rest:
+  damhau.ansible_for_nsxt.nsxt_rest:
     hostname: "{{ nsx['fqdn'] }}"
     username: "{{ nsx['user'] }}"
     password: "{{ nsx['password'] }}"
@@ -34,7 +34,7 @@
   with_items: "{{ api_data }}"
 
 - name: Edgeアップグレード開始
-  vmware.ansible_for_nsxt.nsxt_upgrade_run:
+  damhau.ansible_for_nsxt.nsxt_upgrade_run:
     hostname: "{{ nsx['fqdn'] }}"
     username: "{{ nsx['user'] }}"
     password: "{{ nsx['password'] }}"
@@ -47,7 +47,7 @@
     msg: "{{ upgrade_edge }}"
 
 - name: Edgeアップグレード結果確認
-  vmware.ansible_for_nsxt.nsxt_upgrade_status_summary_facts:
+  damhau.ansible_for_nsxt.nsxt_upgrade_status_summary_facts:
     hostname: "{{ nsx['fqdn'] }}"
     username: "{{ nsx['user'] }}"
     password: "{{ nsx['password'] }}"
@@ -61,7 +61,7 @@
     msg: "{{ upgrade_status }}"
 
 - name: Edgeアップグレード後チェック
-  vmware.ansible_for_nsxt.nsxt_upgrade_postchecks:
+  damhau.ansible_for_nsxt.nsxt_upgrade_postchecks:
     hostname: "{{ nsx['fqdn'] }}"
     username: "{{ nsx['user'] }}"
     password: "{{ nsx['password'] }}"

@@ -28,7 +28,7 @@
       msg: "{{ bundle_id }}"
 
   - name: アップグレードバンドルのステータス確認
-    vmware.ansible_for_nsxt.nsxt_upgrade_upload_mub_facts:
+    damhau.ansible_for_nsxt.nsxt_upgrade_upload_mub_facts:
       hostname: "{{ nsx['fqdn'] }}"
       username: "{{ nsx['user'] }}"
       password: "{{ nsx['password'] }}"
@@ -45,7 +45,7 @@
       msg: "{{ upload_nub_facts }}"
 
   - name: エンドユーザー同意書の同意状況確認
-    vmware.ansible_for_nsxt.nsxt_upgrade_eula_accept_facts:
+    damhau.ansible_for_nsxt.nsxt_upgrade_eula_accept_facts:
       hostname: "{{ nsx['fqdn'] }}"
       username: "{{ nsx['user'] }}"
       password: "{{ nsx['password'] }}"
@@ -57,7 +57,7 @@
       msg: "{{ eula_accept_facts }}"
 
   - name: エンドユーザー同意書の同意
-    vmware.ansible_for_nsxt.nsxt_upgrade_eula_accept:
+    damhau.ansible_for_nsxt.nsxt_upgrade_eula_accept:
       hostname: "{{ nsx['fqdn'] }}"
       username: "{{ nsx['user'] }}"
       password: "{{ nsx['password'] }}"
@@ -65,7 +65,7 @@
     when: eula_accept_facts.acceptance == false
 
   - name: アップグレードコーディネーターのアップグレード
-    vmware.ansible_for_nsxt.nsxt_upgrade_uc:
+    damhau.ansible_for_nsxt.nsxt_upgrade_uc:
       hostname: "{{ nsx['fqdn'] }}"
       username: "{{ nsx['user'] }}"
       password: "{{ nsx['password'] }}"
@@ -76,7 +76,7 @@
       msg: "{{ upgrade_uc }}"
 
   - name: アップグレードコーディネーターのアップグレード状況確認
-    vmware.ansible_for_nsxt.nsxt_upgrade_uc_facts:
+    damhau.ansible_for_nsxt.nsxt_upgrade_uc_facts:
       hostname: "{{ nsx['fqdn'] }}"
       username: "{{ nsx['user'] }}"
       password: "{{ nsx['password'] }}"
@@ -90,7 +90,7 @@
       msg: "{{ upgrade_uc_status }}"
 
   - name: プリチェック
-    vmware.ansible_for_nsxt.nsxt_upgrade_prechecks:
+    damhau.ansible_for_nsxt.nsxt_upgrade_prechecks:
       hostname: "{{ nsx['fqdn'] }}"
       username: "{{ nsx['user'] }}"
       password: "{{ nsx['password'] }}"
@@ -102,7 +102,7 @@
       msg: "{{ res_precheck }}"
 
   - name: Edgeアップグレードプラン設定
-    vmware.ansible_for_nsxt.nsxt_upgrade_plan:
+    damhau.ansible_for_nsxt.nsxt_upgrade_plan:
       hostname: "{{ nsx['fqdn'] }}"
       username: "{{ nsx['user'] }}"
       password: "{{ nsx['password'] }}"
@@ -127,7 +127,7 @@
     loop_var: edge_cluster_name
 
 # - name: Edgeグループ設定取得
-#   vmware.ansible_for_nsxt.nsxt_rest:
+#   damhau.ansible_for_nsxt.nsxt_rest:
 #     hostname: "{{ nsx['fqdn'] }}"
 #     username: "{{ nsx['user'] }}"
 #     password: "{{ nsx['password'] }}"
@@ -148,7 +148,7 @@
 #   with_items: "{{ api_data }}"
 
 # - name: Edgeアップグレード開始
-#   vmware.ansible_for_nsxt.nsxt_upgrade_run:
+#   damhau.ansible_for_nsxt.nsxt_upgrade_run:
 #     hostname: "{{ nsx['fqdn'] }}"
 #     username: "{{ nsx['user'] }}"
 #     password: "{{ nsx['password'] }}"
@@ -161,7 +161,7 @@
 #     msg: "{{ upgrade_edge }}"
 
 # - name: Edgeアップグレード結果確認
-#   vmware.ansible_for_nsxt.nsxt_upgrade_status_summary_facts:
+#   damhau.ansible_for_nsxt.nsxt_upgrade_status_summary_facts:
 #     hostname: "{{ nsx['fqdn'] }}"
 #     username: "{{ nsx['user'] }}"
 #     password: "{{ nsx['password'] }}"
@@ -173,7 +173,7 @@
 #     msg: "{{ upgrade_status.component_status[0] }}"
 
 # - name: Edgeアップグレード後チェック
-#   vmware.ansible_for_nsxt.nsxt_upgrade_postchecks:
+#   damhau.ansible_for_nsxt.nsxt_upgrade_postchecks:
 #     hostname: "{{ nsx['fqdn'] }}"
 #     username: "{{ nsx['user'] }}"
 #     password: "{{ nsx['password'] }}"
@@ -186,7 +186,7 @@
 #     msg: "{{ (postcheck_edge.message.split(':'))[0] }}"
 
 - name: ホストアップグレード開始
-  vmware.ansible_for_nsxt.nsxt_upgrade_run:
+  damhau.ansible_for_nsxt.nsxt_upgrade_run:
     hostname: "{{ nsx['fqdn'] }}"
     username: "{{ nsx['user'] }}"
     password: "{{ nsx['password'] }}"
@@ -199,7 +199,7 @@
     msg: "{{ upgrade_host }}"
 
 - name: ホストアップグレード結果確認
-  vmware.ansible_for_nsxt.nsxt_upgrade_status_summary_facts:
+  damhau.ansible_for_nsxt.nsxt_upgrade_status_summary_facts:
     hostname: "{{ nsx['fqdn'] }}"
     username: "{{ nsx['user'] }}"
     password: "{{ nsx['password'] }}"
@@ -211,7 +211,7 @@
     msg: "{{ upgrade_status.component_status[1] }}"
 
 - name: ホストアップグレード後チェック
-  vmware.ansible_for_nsxt.nsxt_upgrade_postchecks:
+  damhau.ansible_for_nsxt.nsxt_upgrade_postchecks:
     hostname: "{{ nsx['fqdn'] }}"
     username: "{{ nsx['user'] }}"
     password: "{{ nsx['password'] }}"
@@ -224,7 +224,7 @@
     msg: "{{ (postcheck_host.message.split(':'))[0] }}"
 
 - name: マネージメントプレーンのアップグレード開始
-  vmware.ansible_for_nsxt.nsxt_upgrade_run:
+  damhau.ansible_for_nsxt.nsxt_upgrade_run:
     hostname: "{{ nsx['fqdn'] }}"
     username: "{{ nsx['user'] }}"
     password: "{{ nsx['password'] }}"
@@ -237,7 +237,7 @@
     msg: "{{ upgrade_mp }}"
 
 - name: マネージメントプレーンのアップグレード結果確認
-  vmware.ansible_for_nsxt.nsxt_upgrade_status_summary_facts:
+  damhau.ansible_for_nsxt.nsxt_upgrade_status_summary_facts:
     hostname: "{{ nsx['fqdn'] }}"
     username: "{{ nsx['user'] }}"
     password: "{{ nsx['password'] }}"
@@ -249,7 +249,7 @@
     msg: "{{ upgrade_status.component_status[2] }}"
 
 - name: マネージメントプレーンのアップグレード後チェック
-  vmware.ansible_for_nsxt.nsxt_upgrade_postchecks:
+  damhau.ansible_for_nsxt.nsxt_upgrade_postchecks:
     hostname: "{{ nsx['fqdn'] }}"
     username: "{{ nsx['user'] }}"
     password: "{{ nsx['password'] }}"
@@ -262,7 +262,7 @@
     msg: "{{ (postcheck_management_plane.message.split(':'))[0] }}"
 
 - name: アップグレード後のバージョン取得
-  vmware.ansible_for_nsxt.nsxt_rest:
+  damhau.ansible_for_nsxt.nsxt_rest:
     hostname: "{{ nsx['fqdn'] }}"
     username: "{{ nsx['user'] }}"
     password: "{{ nsx['password'] }}"
@@ -276,7 +276,7 @@
     msg: "{{ manager_facts.body }}"
 
 - name: アップグレードステータス確認
-  vmware.ansible_for_nsxt.nsxt_upgrade_status_summary_facts:
+  damhau.ansible_for_nsxt.nsxt_upgrade_status_summary_facts:
     hostname: "{{ nsx['fqdn'] }}"
     username: "{{ nsx['user'] }}"
     password: "{{ nsx['password'] }}"
